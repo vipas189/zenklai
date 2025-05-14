@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Sign Recognition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #eee;
+            border: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="file"], select, input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        input[type="file"] {
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+        }
+        
+        .console p {
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        
+        .console .success {
+            color: #2ecc71;
+        }
+        
+        .console .error {
+            color: #e74c3c;
+        }
+        
+        .console .info {
+            color: #3498db;
+        }
+        
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .image-preview {
+            max-width: 300px;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: block;
+            margin: 10px auto;
+        }
+        
+        .settings-section {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-section h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .hyperparams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .result-container {
+            margin-top: 20px;
+            text-align: center;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result-container.active {
+            display: block;
+        }
+        
+        .predicted-label {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        
+        .confidence {
+            font-size: 18px;
+            color: #3498db;
+        }
+        
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive styling */
+        @media (max-width: 768px) {
+            .hyperparams-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Traffic Sign Recognition</h1>
+        <p>Train & Test German Traffic Sign Recognition Benchmark</p>
+      </header>
+      <div class="tabs">
+        <button class="tab active" data-tab="train">Train</button>
+        <button class="tab" data-tab="test">Test</button>
+      </div>
+      <!-- Train Tab -->
+      <div class="tab-content active" id="train">
+        <div class="settings-section">
+          <h3>Upload Training Data</h3>
+          <div class="form-group">
+            <label for="train-images">Upload Training Images (ZIP):</label>
+            <input type="file" id="train-images" accept=".zip">
+          </div>
+          <div class="form-group">
+            <label for="train-csv">Upload Training CSV:</label>
+            <input type="file" id="train-csv" accept=".csv">
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Model Selection</h3>
+          <div class="form-group">
+            <label for="model-type">Select Model:</label>
+            <select id="model-type">
+              <option value="cnn">Convolutional Neural Network (CNN)</option>
+              <option value="rnn">Recurrent Neural Network (RNN)</option>
+              <option value="svm">Support Vector Machine (SVM)</option>
+              <option value="random_forest">Random Forest</option>
+              <option value="knn">K-Nearest Neighbors (KNN)</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-section" id="cnn-settings">
+          <h3>CNN Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <div class="form-group">
+              <label for="cnn-epochs">Epochs:</label>
+              <input type="number" id="cnn-epochs" min="1" max="100" value="10">
+            </div>
+            <div class="form-group">
+              <label for="cnn-batch-size">Batch Size:</label>
+              <input type="number" id="cnn-batch-size" min="8" max="256" value="32">
+            </div>
+            <div class="form-group">
+              <label for="cnn-learning-rate">Learning Rate:</label>
+              <input type="number"
+                     id="cnn-learning-rate"
+                     min="0.0001"
+                     max="0.1"
+                     step="0.0001"
+                     value="0.001">
+            </div>
+            <div class="form-group">
+              <label for="cnn-optimizer">Optimizer:</label>
+              <select id="cnn-optimizer">
+                <option value="adam">Adam</option>
+                <option value="sgd">SGD</option>
+                <option value="rmsprop">RMSprop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cnn-dropout">Dropout Rate:</label>
+              <input type="number"
+                     id="cnn-dropout"
+                     min="0.0"
+                     max="0.9"
+                     step="0.1"
+                     value="0.5">
+            </div>
+            <div class="form-group">
+              <label for="cnn-conv-layers">Conv Layers:</label>
+              <input type="number" id="cnn-conv-layers" min="1" max="5" value="3">
+            </div>
+          </div>
+        </div>
+        <div class="settings-section" id="rnn-settings" style="display: none;">
+          <h3>RNN Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <div class="form-group">
+              <label for="rnn-epochs">Epochs:</label>
+              <input type="number" id="rnn-epochs" min="1" max="100" value="15">
+            </div>
+            <div class="form-group">
+              <label for="rnn-batch-size">Batch Size:</label>
+              <input type="number" id="rnn-batch-size" min="8" max="256" value="32">
+            </div>
+            <div class="form-group">
+              <label for="rnn-learning-rate">Learning Rate:</label>
+              <input type="number"
+                     id="rnn-learning-rate"
+                     min="0.0001"
+                     max="0.1"
+                     step="0.0001"
+                     value="0.001">
+            </div>
+            <div class="form-group">
+              <label for="rnn-lstm-cells">LSTM Cells:</label>
+              <input type="number"
+                     id="rnn-lstm-cells"
+                     min="32"
+                     max="512"
+                     step="32"
+                     value="128">
+            </div>
+            <div class="form-group">
+              <label for="rnn-layers">RNN Layers:</label>
+              <input type="number" id="rnn-layers" min="1" max="5" value="2">
+            </div>
+          </div>
+        </div>
+        <div class="settings-section" id="svm-settings" style="display: none;">
+          <h3>SVM Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <div class="form-group">
+              <label for="svm-c">C (Regularization):</label>
+              <input type="number" id="svm-c" min="0.1" max="10" step="0.1" value="1.0">
+            </div>
+            <div class="form-group">
+              <label for="svm-kernel">Kernel:</label>
+              <select id="svm-kernel">
+                <option value="rbf">RBF</option>
+                <option value="linear">Linear</option>
+                <option value="poly">Polynomial</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="svm-gamma">Gamma:</label>
+              <select id="svm-gamma">
+                <option value="scale">Scale</option>
+                <option value="auto">Auto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section" id="rf-settings" style="display: none;">
+          <h3>Random Forest Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <div class="form-group">
+              <label for="rf-n-estimators">Number of Trees:</label>
+              <input type="number"
+                     id="rf-n-estimators"
+                     min="10"
+                     max="500"
+                     step="10"
+                     value="100">
+            </div>
+            <div class="form-group">
+              <label for="rf-max-depth">Max Depth:</label>
+              <input type="number" id="rf-max-depth" min="5" max="50" step="5" value="20">
+            </div>
+            <div class="form-group">
+              <label for="rf-min-samples-split">Min Samples Split:</label>
+              <input type="number" id="rf-min-samples-split" min="2" max="20" value="2">
+            </div>
+          </div>
+        </div>
+        <div class="settings-section" id="knn-settings" style="display: none;">
+          <h3>KNN Hyperparameters</h3>
+          <div class="hyperparams-grid">
+            <div class="form-group">
+              <label for="knn-n-neighbors">Number of Neighbors:</label>
+              <input type="number" id="knn-n-neighbors" min="1" max="20" value="5">
+            </div>
+            <div class="form-group">
+              <label for="knn-weights">Weights:</label>
+              <select id="knn-weights">
+                <option value="uniform">Uniform</option>
+                <option value="distance">Distance</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="knn-algorithm">Algorithm:</label>
+              <select id="knn-algorithm">
+                <option value="auto">Auto</option>
+                <option value="ball_tree">Ball Tree</option>
+                <option value="kd_tree">KD Tree</option>
+                <option value="brute">Brute Force</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button id="start-training-btn">Start Training</button>
+        <div class="loader" id="training-loader"></div>
+        <div class="console" id="training-console">
+          <p>== Training Console ==</p>
+          <p class="info">Load training data and set hyperparameters, then click "Start Training"</p>
+        </div>
+      </div>
+      <!-- Test Tab -->
+      <div class="tab-content" id="test">
+        <div class="form-group">
+          <label for="test-image">Upload Image to Test:</label>
+          <input type="file" id="test-image" accept="image/*">
+        </div>
+        <div class="preview-container">
+          <img id="test-image-preview" class="image-preview" style="display: none;">
+        </div>
+        <div class="form-group">
+          <label for="test-model">Select Model for Testing:</label>
+          <select id="test-model">
+            <option value="cnn">Convolutional Neural Network (CNN)</option>
+            <option value="rnn">Recurrent Neural Network (RNN)</option>
+            <option value="svm">Support Vector Machine (SVM)</option>
+            <option value="random_forest">Random Forest</option>
+            <option value="knn">K-Nearest Neighbors (KNN)</option>
+          </select>
+        </div>
+        <button id="run-test-btn">Run Test</button>
+        <div class="loader" id="test-loader"></div>
+        <div class="result-container" id="test-result">
+          <h3>Test Result</h3>
+          <div class="predicted-label" id="predicted-label">Speed Limit (30km/h)</div>
+          <div class="confidence" id="confidence-score">Confidence: 97.8%</div>
+        </div>
+      </div>
+    </div>
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and tab contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Model selection change handler
+        document.getElementById('model-type').addEventListener('change', function() {
+            // Hide all settings sections
+            document.querySelectorAll('.settings-section[id$="-settings"]').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show the selected model's settings
+            const selectedModel = this.value;
+            if (selectedModel === 'cnn') {
+                document.getElementById('cnn-settings').style.display = 'block';
+            } else if (selectedModel === 'rnn') {
+                document.getElementById('rnn-settings').style.display = 'block';
+            } else if (selectedModel === 'svm') {
+                document.getElementById('svm-settings').style.display = 'block';
+            } else if (selectedModel === 'random_forest') {
+                document.getElementById('rf-settings').style.display = 'block';
+            } else if (selectedModel === 'knn') {
+                document.getElementById('knn-settings').style.display = 'block';
+            }
+        });
+        
+        // Start training button handler
+        document.getElementById('start-training-btn').addEventListener('click', function() {
+            const trainingConsole = document.getElementById('training-console');
+            const loader = document.getElementById('training-loader');
+            
+            // Check if files are uploaded
+            const trainImages = document.getElementById('train-images').files;
+            const trainCsv = document.getElementById('train-csv').files;
+            
+            if (trainImages.length === 0 || trainCsv.length === 0) {
+                trainingConsole.innerHTML += '<p class="error">Error: Please upload both training images (ZIP) and CSV file</p>';
+                return;
+            }
+            
+            // Show loader
+            loader.style.display = 'block';
+            
+            // Get selected model and its hyperparameters
+            const selectedModel = document.getElementById('model-type').value;
+            let hyperparams = {};
+            
+            if (selectedModel === 'cnn') {
+                hyperparams = {
+                    epochs: document.getElementById('cnn-epochs').value,
+                    batchSize: document.getElementById('cnn-batch-size').value,
+                    learningRate: document.getElementById('cnn-learning-rate').value,
+                    optimizer: document.getElementById('cnn-optimizer').value,
+                    dropout: document.getElementById('cnn-dropout').value,
+                    convLayers: document.getElementById('cnn-conv-layers').value
+                };
+            } else if (selectedModel === 'rnn') {
+                hyperparams = {
+                    epochs: document.getElementById('rnn-epochs').value,
+                    batchSize: document.getElementById('rnn-batch-size').value,
+                    learningRate: document.getElementById('rnn-learning-rate').value,
+                    lstmCells: document.getElementById('rnn-lstm-cells').value,
+                    layers: document.getElementById('rnn-layers').value
+                };
+            } else if (selectedModel === 'svm') {
+                hyperparams = {
+                    C: document.getElementById('svm-c').value,
+                    kernel: document.getElementById('svm-kernel').value,
+                    gamma: document.getElementById('svm-gamma').value
+                };
+            } else if (selectedModel === 'random_forest') {
+                hyperparams = {
+                    nEstimators: document.getElementById('rf-n-estimators').value,
+                    maxDepth: document.getElementById('rf-max-depth').value,
+                    minSamplesSplit: document.getElementById('rf-min-samples-split').value
+                };
+            } else if (selectedModel === 'knn') {
+                hyperparams = {
+                    nNeighbors: document.getElementById('knn-n-neighbors').value,
+                    weights: document.getElementById('knn-weights').value,
+                    algorithm: document.getElementById('knn-algorithm').value
+                };
+            }
+            
+            // Clear console and add initial messages
+            trainingConsole.innerHTML = '<p>== Training Console ==</p>';
+            trainingConsole.innerHTML += '<p class="info">Starting training process...</p>';
+            trainingConsole.innerHTML += `<p>Selected model: ${selectedModel.toUpperCase()}</p>`;
+            trainingConsole.innerHTML += '<p>Hyperparameters:</p>';
+            for (const [key, value] of Object.entries(hyperparams)) {
+                trainingConsole.innerHTML += `<p>- ${key}: ${value}</p>`;
+            }
+            
+            // Simulate training process
+            simulateTraining(selectedModel, hyperparams);
+        });
+        
+        // Simulate training process with console output
+        function simulateTraining(model, hyperparams) {
+            const trainingConsole = document.getElementById('training-console');
+            const loader = document.getElementById('training-loader');
+            
+            // Simulate loading data
+            setTimeout(() => {
+                trainingConsole.innerHTML += '<p class="info">Loading and preprocessing training data...</p>';
+                trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                
+                setTimeout(() => {
+                    trainingConsole.innerHTML += '<p class="success">Training data loaded successfully (39,209 images)</p>';
+                    trainingConsole.innerHTML += '<p>Extracting features and preparing batches...</p>';
+                    trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                    
+                    setTimeout(() => {
+                        trainingConsole.innerHTML += '<p class="success">Data preparation complete</p>';
+                        trainingConsole.innerHTML += '<p class="info">Starting model training...</p>';
+                        trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                        
+                        // Simulate epochs
+                        let currentEpoch = 1;
+                        const totalEpochs = model === 'cnn' ? parseInt(hyperparams.epochs) : 
+                                          model === 'rnn' ? parseInt(hyperparams.epochs) : 5;
+                        
+                        const epochInterval = setInterval(() => {
+                            if (currentEpoch <= totalEpochs) {
+                                const accuracy = (70 + (currentEpoch / totalEpochs) * 25).toFixed(2);
+                                const loss = (1 - (currentEpoch / totalEpochs) * 0.8).toFixed(4);
+                                
+                                trainingConsole.innerHTML += `<p>Epoch ${currentEpoch}/${totalEpochs} - accuracy: ${accuracy}% - loss: ${loss}</p>`;
+                                trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                                currentEpoch++;
+                            } else {
+                                clearInterval(epochInterval);
+                                
+                                // Training completed
+                                trainingConsole.innerHTML += '<p class="success">Training completed!</p>';
+                                trainingConsole.innerHTML += '<p>Evaluating model on validation set...</p>';
+                                trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                                
+                                setTimeout(() => {
+                                    const finalAccuracy = (92 + Math.random() * 5).toFixed(2);
+                                    const finalLoss = (0.1 + Math.random() * 0.05).toFixed(4);
+                                    const precision = (91 + Math.random() * 5).toFixed(2);
+                                    const recall = (91 + Math.random() * 5).toFixed(2);
+                                    const f1 = (91 + Math.random() * 5).toFixed(2);
+                                    
+                                    trainingConsole.innerHTML += '<p class="info">Final evaluation metrics:</p>';
+                                    trainingConsole.innerHTML += `<p>- Accuracy: ${finalAccuracy}%</p>`;
+                                    trainingConsole.innerHTML += `<p>- Loss: ${finalLoss}</p>`;
+                                    trainingConsole.innerHTML += `<p>- Precision: ${precision}%</p>`;
+                                    trainingConsole.innerHTML += `<p>- Recall: ${recall}%</p>`;
+                                    trainingConsole.innerHTML += `<p>- F1 Score: ${f1}%</p>`;
+                                    trainingConsole.innerHTML += '<p class="success">Model saved successfully!</p>';
+                                    trainingConsole.scrollTop = trainingConsole.scrollHeight;
+                                    
+                                    // Hide loader
+                                    loader.style.display = 'none';
+                                }, 2000);
+                            }
+                        }, 1000);
+                    }, 1500);
+                }, 2000);
+            }, 1000);
+        }
+        
+        // Test image preview
+        document.getElementById('test-image').addEventListener('change', function(event) {
+            const preview = document.getElementById('test-image-preview');
+            const file = event.target.files[0];
+            
+            if (file) {
+                preview.style.display = 'block';
+                preview.src = URL.createObjectURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        // Run test button handler
+        document.getElementById('run-test-btn').addEventListener('click', function() {
+            const testImage = document.getElementById('test-image').files;
+            const testResult = document.getElementById('test-result');
+            const loader = document.getElementById('test-loader');
+            
+            if (testImage.length === 0) {
+                alert('Please upload an image to test');
+                return;
+            }
+            
+            // Show loader and hide result
+            loader.style.display = 'block';
+            testResult.classList.remove('active');
+            
+            // Simulate processing
+            setTimeout(() => {
+                // Hide loader and show result
+                loader.style.display = 'none';
+                testResult.classList.add('active');
+                
+                // Generate random results for demo
+                const trafficSigns = [
+                    'Speed Limit (30km/h)',
+                    'Speed Limit (50km/h)',
+                    'Stop',
+                    'Yield',
+                    'No Entry',
+                    'Priority Road',
+                    'Keep Right'
+                ];
+                
+                const randomSign = trafficSigns[Math.floor(Math.random() * trafficSigns.length)];
+                const randomConfidence = (92 + Math.random() * 7).toFixed(1);
+                
+                document.getElementById('predicted-label').textContent = randomSign;
+                document.getElementById('confidence-score').textContent = `Confidence: ${randomConfidence}%`;
+            }, 2000);
+        });
+    </script>
+  </body>
+</html>
