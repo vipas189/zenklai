@@ -1,231 +1,159 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traffic Sign Recognition</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  </head>
-  <body>
-    <div class="container">
-      <header>
-        <h1>Traffic Sign Recognition</h1>
-        <p>Train & Test German Traffic Sign Recognition Benchmark</p>
-      </header>
-      <div class="tabs">
-        <button class="tab active" data-tab="train">Train</button>
-        <button class="tab" data-tab="test">Test</button>
+{% extends "base.html" %}
+{% block body %}
+  <!-- Main content -->
+  <div class="tabs-container" id="tabs-container">
+    <!-- Tab Buttons -->
+    <div class="tab-buttons-container" id="tab-buttons-container">
+      <div class="tab-button train-button"
+           id="train-btn"
+           onclick="openTab('train')">
+        <span class="tab-icon">⚙️</span> <!-- Gear Icon -->
+        Train
       </div>
-      <!-- Train Tab -->
-      <div class="tab-content active" id="train">
-        <div class="settings-section">
-          <h3>Upload Training Data</h3>
+      <div class="tab-button test-button"
+           id="test-btn"
+           onclick="openTab('test')">
+        <span class="tab-icon">🔬</span> <!-- Microscope Icon -->
+        Test
+      </div>
+    </div>
+    <!-- Content Area -->
+    <div class="content-container">
+      <!-- Train Tab Content -->
+      <div id="train" class="tab-content train-tab">
+        <div class="card">
+          <h2 class="card-title">Upload Training Data</h2>
           <div class="form-group">
-            <label for="train-images">Upload Training Images (ZIP):</label>
-            <input type="file" id="train-images" accept=".zip">
-          </div>
-          <div class="form-group">
-            <label for="train-csv">Upload Training CSV:</label>
-            <input type="file" id="train-csv" accept=".csv">
+            <label for="train-file-upload">Upload (Folder):</label>
+            <div class="file-upload">
+              <form action="{{ url_for('upload_folder') }}"
+                    method="post"
+                    enctype="multipart/form-data">
+                <!-- Folder picker -->
+                <input type="file"
+                       id="train-folder-input"
+                       name="train_files"
+                       webkitdirectory
+                       directory
+                       multiple
+                       onchange="updateFileLabel('train-folder-input', 'train-folder-label'); this.form.submit();">
+                <button type="button"
+                        class="btn"
+                        onclick="document.getElementById('train-folder-input').click();">Choose Folder</button>
+                <span class="file-label" id="train-folder-label">No folder chosen</span>
+                <!-- Zip/rar picker -->
+                <input type="file"
+                       id="train-archive-input"
+                       name="train_files"
+                       accept=".zip,.rar"
+                       multiple
+                       onchange="updateFileLabel('train-archive-input', 'train-archive-label'); this.form.submit();">
+                <button type="button"
+                        class="btn"
+                        onclick="document.getElementById('train-archive-input').click();">Choose Zip/Rar</button>
+                <span class="file-label" id="train-archive-label">No archive chosen</span>
+              </form>
+            </div>
           </div>
         </div>
-        <div class="settings-section">
-          <h3>Model Selection</h3>
+        <div class="card">
+          <h2 class="card-title">Model Selection</h2>
           <div class="form-group">
-            <label for="model-type">Select Model:</label>
-            <select id="model-type">
-              <option value="cnn">Convolutional Neural Network (CNN)</option>
-              <option value="rnn">Recurrent Neural Network (RNN)</option>
-              <option value="svm">Support Vector Machine (SVM)</option>
-              <option value="random_forest">Random Forest</option>
-              <option value="knn">K-Nearest Neighbors (KNN)</option>
+            <label for="train-model-select">Select Model:</label>
+            <select id="train-model-select">
+              <option>Convolutional Neural Network (CNN)</option>
+              <option>ResNet</option>
+              <option>MobileNet</option>
             </select>
           </div>
         </div>
-        <div class="settings-section" id="cnn-settings">
-          <h3>CNN Hyperparameters</h3>
-          <div class="hyperparams-grid">
-            <div class="form-group">
-              <label for="cnn-epochs">Epochs:</label>
-              <input type="number" id="cnn-epochs" min="1" max="100" value="10">
+        <div class="card">
+          <h2 class="card-title">CNN Hyperparameters</h2>
+          <div class="form-row">
+            <div class="form-col">
+              <label for="epochs">Epochs:</label>
+              <input type="number" id="epochs" value="10">
             </div>
-            <div class="form-group">
-              <label for="cnn-batch-size">Batch Size:</label>
-              <input type="number" id="cnn-batch-size" min="8" max="256" value="32">
+            <div class="form-col">
+              <label for="batch-size">Batch Size:</label>
+              <input type="number" id="batch-size" value="32">
             </div>
-            <div class="form-group">
-              <label for="cnn-learning-rate">Learning Rate:</label>
-              <input type="number"
-                     id="cnn-learning-rate"
-                     min="0.0001"
-                     max="0.1"
-                     step="0.0001"
-                     value="0.001">
+            <div class="form-col">
+              <label for="learning-rate">Learning Rate:</label>
+              <input type="number" id="learning-rate" value="0.001" step="0.0001">
             </div>
-            <div class="form-group">
-              <label for="cnn-optimizer">Optimizer:</label>
-              <select id="cnn-optimizer">
-                <option value="adam">Adam</option>
-                <option value="sgd">SGD</option>
-                <option value="rmsprop">RMSprop</option>
+            <div class="form-col">
+              <label for="optimizer">Optimizer:</label>
+              <select id="optimizer">
+                <option>Adam</option>
+                <option>SGD</option>
+                <option>RMSprop</option>
               </select>
             </div>
-            <div class="form-group">
-              <label for="cnn-dropout">Dropout Rate:</label>
+            <div class="form-col">
+              <label for="dropout-rate">Dropout Rate:</label>
               <input type="number"
-                     id="cnn-dropout"
-                     min="0.0"
-                     max="0.9"
+                     id="dropout-rate"
+                     value="0.5"
                      step="0.1"
-                     value="0.5">
+                     min="0"
+                     max="1">
             </div>
-            <div class="form-group">
-              <label for="cnn-conv-layers">Conv Layers:</label>
-              <input type="number" id="cnn-conv-layers" min="1" max="5" value="3">
-            </div>
-          </div>
-        </div>
-        <div class="settings-section" id="rnn-settings" style="display: none;">
-          <h3>RNN Hyperparameters</h3>
-          <div class="hyperparams-grid">
-            <div class="form-group">
-              <label for="rnn-epochs">Epochs:</label>
-              <input type="number" id="rnn-epochs" min="1" max="100" value="15">
-            </div>
-            <div class="form-group">
-              <label for="rnn-batch-size">Batch Size:</label>
-              <input type="number" id="rnn-batch-size" min="8" max="256" value="32">
-            </div>
-            <div class="form-group">
-              <label for="rnn-learning-rate">Learning Rate:</label>
-              <input type="number"
-                     id="rnn-learning-rate"
-                     min="0.0001"
-                     max="0.1"
-                     step="0.0001"
-                     value="0.001">
-            </div>
-            <div class="form-group">
-              <label for="rnn-lstm-cells">LSTM Cells:</label>
-              <input type="number"
-                     id="rnn-lstm-cells"
-                     min="32"
-                     max="512"
-                     step="32"
-                     value="128">
-            </div>
-            <div class="form-group">
-              <label for="rnn-layers">RNN Layers:</label>
-              <input type="number" id="rnn-layers" min="1" max="5" value="2">
+            <div class="form-col">
+              <label for="conv-layers">Conv Layers:</label>
+              <input type="number" id="conv-layers" value="3" min="1" max="10">
             </div>
           </div>
-        </div>
-        <div class="settings-section" id="svm-settings" style="display: none;">
-          <h3>SVM Hyperparameters</h3>
-          <div class="hyperparams-grid">
-            <div class="form-group">
-              <label for="svm-c">C (Regularization):</label>
-              <input type="number" id="svm-c" min="0.1" max="10" step="0.1" value="1.0">
-            </div>
-            <div class="form-group">
-              <label for="svm-kernel">Kernel:</label>
-              <select id="svm-kernel">
-                <option value="rbf">RBF</option>
-                <option value="linear">Linear</option>
-                <option value="poly">Polynomial</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="svm-gamma">Gamma:</label>
-              <select id="svm-gamma">
-                <option value="scale">Scale</option>
-                <option value="auto">Auto</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <button class="btn run-btn">
+              <span>▶</span> Start Training
+            </button>
           </div>
         </div>
-        <div class="settings-section" id="rf-settings" style="display: none;">
-          <h3>Random Forest Hyperparameters</h3>
-          <div class="hyperparams-grid">
-            <div class="form-group">
-              <label for="rf-n-estimators">Number of Trees:</label>
-              <input type="number"
-                     id="rf-n-estimators"
-                     min="10"
-                     max="500"
-                     step="10"
-                     value="100">
-            </div>
-            <div class="form-group">
-              <label for="rf-max-depth">Max Depth:</label>
-              <input type="number" id="rf-max-depth" min="5" max="50" step="5" value="20">
-            </div>
-            <div class="form-group">
-              <label for="rf-min-samples-split">Min Samples Split:</label>
-              <input type="number" id="rf-min-samples-split" min="2" max="20" value="2">
-            </div>
-          </div>
-        </div>
-        <div class="settings-section" id="knn-settings" style="display: none;">
-          <h3>KNN Hyperparameters</h3>
-          <div class="hyperparams-grid">
-            <div class="form-group">
-              <label for="knn-n-neighbors">Number of Neighbors:</label>
-              <input type="number" id="knn-n-neighbors" min="1" max="20" value="5">
-            </div>
-            <div class="form-group">
-              <label for="knn-weights">Weights:</label>
-              <select id="knn-weights">
-                <option value="uniform">Uniform</option>
-                <option value="distance">Distance</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="knn-algorithm">Algorithm:</label>
-              <select id="knn-algorithm">
-                <option value="auto">Auto</option>
-                <option value="ball_tree">Ball Tree</option>
-                <option value="kd_tree">KD Tree</option>
-                <option value="brute">Brute Force</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <button id="start-training-btn">Start Training</button>
-        <div class="loader" id="training-loader"></div>
-        <div class="console" id="training-console">
-          <p>== Training Console ==</p>
-          <p class="info">Load training data and set hyperparameters, then click "Start Training"</p>
+        <div class="console">
+          == Training Console ==
+          <br>
+          Awaiting training parameters...
         </div>
       </div>
-      <!-- Test Tab -->
-      <div class="tab-content" id="test">
-        <div class="form-group">
-          <label for="test-image">Upload Image to Test:</label>
-          <input type="file" id="test-image" accept="image/*">
+      <!-- Test Tab Content -->
+      <div id="test" class="tab-content test-tab">
+        <div class="card">
+          <h2 class="card-title">Upload Image to Test:</h2>
+          <div class="form-group">
+            <label for="test-file-upload">Upload Image:</label>
+            <div class="file-upload">
+              <input type="file"
+                     id="test-file-input"
+                     accept="image/*"
+                     onchange="updateFileLabel('test-file-input', 'test-file-label')">
+              <button class="btn"
+                      onclick="document.getElementById('test-file-input').click();">Choose Image</button>
+              <span class="file-label" id="test-file-label">No file chosen</span>
+            </div>
+          </div>
         </div>
-        <div class="preview-container">
-          <img id="test-image-preview" class="image-preview" style="display: none;">
+        <div class="card">
+          <h2 class="card-title">Select Model for Testing:</h2>
+          <div class="form-group">
+            <label for="test-model-select">Select Model:</label>
+            <select id="test-model-select">
+              <option>Convolutional Neural Network (CNN)</option>
+              <option>ResNet</option>
+              <option>MobileNet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <button class="btn run-btn">
+              <span>▶</span> Run Test
+            </button>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="test-model">Select Model for Testing:</label>
-          <select id="test-model">
-            <option value="cnn">Convolutional Neural Network (CNN)</option>
-            <option value="rnn">Recurrent Neural Network (RNN)</option>
-            <option value="svm">Support Vector Machine (SVM)</option>
-            <option value="random_forest">Random Forest</option>
-            <option value="knn">K-Nearest Neighbors (KNN)</option>
-          </select>
-        </div>
-        <button id="run-test-btn">Run Test</button>
-        <div class="loader" id="test-loader"></div>
-        <div class="result-container" id="test-result">
-          <h3>Test Result</h3>
-          <div class="predicted-label" id="predicted-label">Speed Limit (30km/h)</div>
-          <div class="confidence" id="confidence-score">Confidence: 97.8%</div>
+        <div id="results-area" class="card">
+          <h2 class="card-title">Test Results</h2>
+          <p>Results will appear here after running a test.</p>
         </div>
       </div>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-  </body>
-</html>
+  </div>
+{% endblock body %}
