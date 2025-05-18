@@ -29,7 +29,6 @@
               <form action="{{ url_for('upload_folder') }}"
                     method="post"
                     enctype="multipart/form-data">
-                <!-- Folder picker -->
                 <input type="file"
                        id="train-folder-input"
                        name="train_files"
@@ -40,18 +39,17 @@
                 <button type="button"
                         class="btn"
                         onclick="document.getElementById('train-folder-input').click();">Choose Folder</button>
-                <span class="file-label" id="train-folder-label">No folder chosen</span>
-                <!-- Zip/rar picker -->
-                <input type="file"
-                       id="train-archive-input"
-                       name="train_files"
-                       accept=".zip,.rar"
-                       multiple
-                       onchange="updateFileLabel('train-archive-input', 'train-archive-label'); this.form.submit();">
-                <button type="button"
-                        class="btn"
-                        onclick="document.getElementById('train-archive-input').click();">Choose Zip/Rar</button>
-                <span class="file-label" id="train-archive-label">No archive chosen</span>
+                <span class="file-label" id="train-folder-label">
+                  {% set messages = get_flashed_messages(category_filter=["image_count"]) %}
+                  {% if messages %}
+                    {% for msg in messages %}{{ msg }}{% endfor %}
+                  {% else %}
+                    No folder chosen
+                  {% endif %}
+                </span>
+              </form>
+              <form action="{{ url_for('delete_upload') }}" method="post">
+                {% if messages %}<button type="submit" class="btn margin">Delete upload</button>{% endif %}
               </form>
             </div>
           </div>

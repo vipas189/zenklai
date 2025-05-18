@@ -264,7 +264,8 @@ select:focus {
 }
 
 .file-upload {
-  display: flex;
+  /* display: flex; */
+  display: inline-block;
   align-items: center;
 }
 /* Custom file input styling */
@@ -279,9 +280,12 @@ select:focus {
 .file-label {
   color: #6b7280; /* Muted label color */
   font-size: 0.9rem;
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .btn {
@@ -339,4 +343,12 @@ select:focus {
 }
 .tab-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+.padding {
+  padding: 10px;
+}
+
+.margin {
+  margin-top: 10px;
 }
