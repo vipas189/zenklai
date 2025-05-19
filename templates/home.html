@@ -30,21 +30,19 @@
                     method="post"
                     enctype="multipart/form-data">
                 <input type="file"
-                       id="train-folder-input"
-                       name="train_files"
-                       webkitdirectory
-                       directory
-                       multiple
-                       onchange="updateFileLabel('train-folder-input', 'train-folder-label'); this.form.submit();">
+                       id="train-zip-input"
+                       name="train_zip"
+                       accept=".zip"
+                       onchange="updateFileLabel('train-zip-input', 'train-zip-label'); this.form.submit();">
                 <button type="button"
                         class="btn"
-                        onclick="document.getElementById('train-folder-input').click();">Choose Folder</button>
-                <span class="file-label" id="train-folder-label">
+                        onclick="document.getElementById('train-zip-input').click();">Choose Zip File</button>
+                <span class="file-label" id="train-zip-label">
                   {% set messages = get_flashed_messages(category_filter=["image_count"]) %}
                   {% if messages %}
                     {% for msg in messages %}{{ msg }}{% endfor %}
                   {% else %}
-                    No folder chosen
+                    No zip file chosen
                   {% endif %}
                 </span>
               </form>
@@ -53,6 +51,10 @@
               </form>
             </div>
           </div>
+          <span class="file-label" id="train-folder-label">
+            {% set messages = get_flashed_messages(category_filter=["error"]) %}
+            {% for msg in messages %}{{ msg }}{% endfor %}
+          </span>
         </div>
         <div class="card">
           <h2 class="card-title">Model Selection</h2>
