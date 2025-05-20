@@ -344,7 +344,7 @@ def home_route(app):
     def run_test():
         request.form.get("model")
         if request.form.get("model") == "cnn":
-            cnn_model.run_test()
+            flash(cnn_model.run_test(), category="traffic-sign")
         elif request.form.get("model") == "svm":
             svm_model.run_test()
         elif request.form.get("model") == "vit":

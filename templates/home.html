@@ -282,7 +282,12 @@
                 enctype="multipart/form-data"
                 style="text-align:center">
             <h2 class="card-title">Test Results</h2>
-            <p>Results will appear here after running a test.</p>
+            {% set messages = get_flashed_messages(category_filter=["traffic-sign"]) %}
+            {% if messages %}
+              {% for msg in messages %}<p>{{ msg }}</p>{% endfor %}
+            {% else %}
+              <p>Results will appear here after running a test.</p>
+            {% endif %}
             <div id="drop-area"
                  style="width: 800px;
                         height: 500px;
