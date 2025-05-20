@@ -228,7 +228,7 @@ body {
 }
 
 .form-col {
-  flex: 1;
+  flex: 1 auto;
   padding: 0 12px; /* Gutter for columns */
   min-width: 180px; /* Increased min-width */
   margin-bottom: 12px;

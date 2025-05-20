@@ -10,6 +10,13 @@ import shutil
 from werkzeug.exceptions import RequestEntityTooLarge
 import zipfile
 import io
+import services.cnn_model as cnn_model
+import services.svm_model as svm_model
+import services.vit_model as vit_model
+from services.data_split import data_split
+from config import Config
+import glob
+from PIL import Image
 
 
 def home_route(app):
@@ -230,4 +237,116 @@ def home_route(app):
         img_folder = os.path.join(current_app.root_path, "static/uploads/images")
         shutil.rmtree(img_folder)
 
+        return redirect(url_for("home"))
+
+    @app.route("/start/training", methods=["POST"])
+    def start_training():
+        model_type = request.form.get("model")
+        hyperparameters = {"model": model_type}
+
+        if model_type == "cnn-hyperparams":
+            hyperparameters["epochs"] = request.form.get("cnn-epochs", type=int)
+            hyperparameters["batch_size"] = request.form.get("cnn-batch-size", type=int)
+            hyperparameters["learning_rate"] = request.form.get(
+                "cnn-learning-rate", type=float
+            )
+            hyperparameters["optimizer"] = request.form.get("cnn-optimizer")
+            hyperparameters["weight_decay"] = request.form.get(
+                "cnn-weight-decay", type=float
+            )
+            hyperparameters["dropout_rate"] = request.form.get(
+                "cnn-dropout-rate", type=float
+            )
+            hyperparameters["activation_function"] = request.form.get(
+                "cnn-activation-function"
+            )
+            hyperparameters["early_stop"] = request.form.get("cnn-early-stop", type=int)
+            X_train, X_val, y_train, y_val, label_to_index, index_to_label = (
+                data_split()
+            )
+            cnn_model.start(
+                X_train,
+                X_val,
+                y_train,
+                y_val,
+                label_to_index,
+                index_to_label,
+                hyperparameters,
+            )
+        elif model_type == "svm-hyperparams":
+            hyperparameters["c"] = request.form.get("svm-c", type=float)
+            hyperparameters["epsilon"] = request.form.get("svm-epsilon", type=float)
+            hyperparameters["kernel"] = request.form.get("svm-kernel")
+            hyperparameters["gamma"] = request.form.get("svm-gamma")
+            hyperparameters["degree"] = request.form.get("svm-degree", type=int)
+            hyperparameters["coef0"] = request.form.get("svm-coef0", type=float)
+            svm_model.start(hyperparameters)
+        elif model_type == "vit-hyperparams":
+            hyperparameters["epochs"] = request.form.get("vit-epochs", type=int)
+            hyperparameters["batch_size"] = request.form.get("vit-batch-size", type=int)
+            hyperparameters["learning_rate"] = request.form.get(
+                "vit-learning-rate", type=float
+            )
+            hyperparameters["optimizer"] = request.form.get("vit-optimizer")
+            hyperparameters["weight_decay"] = request.form.get(
+                "vit-weight-decay", type=float
+            )
+            hyperparameters["dropout_rate"] = request.form.get(
+                "vit-dropout-rate", type=float
+            )
+            hyperparameters["patch_size"] = request.form.get("vit-patch-size", type=int)
+            hyperparameters["hidden_size"] = request.form.get(
+                "vit-hidden-size", type=int
+            )
+            hyperparameters["num_layers"] = request.form.get("vit-num-layers", type=int)
+            hyperparameters["num_heads"] = request.form.get("vit-num-heads", type=int)
+            hyperparameters["mlp_size"] = request.form.get("vit-mlp-size", type=int)
+            vit_model.start(hyperparameters)
+        return redirect(url_for("home"))
+
+    @app.route("/test/upload/image", methods=["POST"])
+    def test_upload_image():
+        file = request.files["test-file-input"]
+
+        if file.filename == "":
+            flash("No selected file", "error")
+            return redirect(url_for("home"))
+
+        if not allowed_file(file.filename, is_image=True):
+            allowed_types = ", ".join(Config.IMAGE_ALLOWED_EXTENSIONS)
+            flash(f"File type not allowed. Allowed types are: {allowed_types}", "error")
+            return redirect(url_for("home"))
+
+        if file:
+            try:
+                folder = os.path.join("static", "uploads", "test-images")
+                for f in glob.glob(os.path.join(folder, "image_name.*")):
+                    os.remove(f)
+
+                # Always save as PNG
+                new_name = "image_name.png"
+                filepath = os.path.join(folder, new_name)
+
+                img = Image.open(file.stream)
+                img.save(filepath, format="PNG")
+
+                flash(f"File uploaded as '{new_name}'.", "success")
+                return redirect(url_for("home"))
+            except Exception as e:
+                print(f"Error saving file: {e}")
+                flash("An error occurred while uploading the image.", "error")
+                return redirect(url_for("home"))
+
+        flash("Unexpected error during file upload.", "error")
+        return redirect(url_for("home"))
+
+    @app.route("/run/test", methods=["POST"])
+    def run_test():
+        request.form.get("model")
+        if request.form.get("model") == "cnn":
+            cnn_model.run_test()
+        elif request.form.get("model") == "svm":
+            svm_model.run_test()
+        elif request.form.get("model") == "vit":
+            vit_model.run_test()
         return redirect(url_for("home"))
