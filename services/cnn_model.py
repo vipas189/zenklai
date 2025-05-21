@@ -8,13 +8,20 @@ from models.mydataset import MyDataset
 import os
 from PIL import Image
 from torchvision import transforms
-
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+from flask_socketio import emit
 
 
 def start(
-    X_train, X_val, y_train, y_val, label_to_index, index_to_label, hyperparameters
+    X_train,
+    X_val,
+    y_train,
+    y_val,
+    label_to_index,
+    index_to_label,
+    hyperparameters,
+    socketio,
 ):
+
     history = {
         "train_loss": [],
         "train_acc": [],
@@ -73,23 +80,40 @@ def start(
 
     loss_fn = nn.CrossEntropyLoss()
 
-    print("Starting Training...")
+    socketio.emit(
+        "log",
+        {"data": "Starting CNN..."},
+    )
+    socketio.emit(
+        "log",
+        {"data": "Hyperparameters:"},
+    )
+    socketio.emit(
+        "log",
+        {"data": str(hyperparameters)},
+    )
     epochs = hyperparameters.get("epochs")
     for epoch in range(epochs):
         train(model, loss_fn, optimizer, train_loader, history, device, hyperparameters)
         val(model, loss_fn, val_loader, history, device, hyperparameters)
-        print(
-            f"Epoch [{epoch+1}/{epochs}] | "
-            f"Train Loss: {history.get('epoch_train_loss'):.4f} | Train Acc: {history.get('epoch_train_acc'):.4f} | "
-            f"Val Loss: {history.get('epoch_val_loss'):.4f} | Val Acc: {history.get('epoch_val_acc'):.4f} - Best: {history.get('best_val_accuracy'):.4f}"
+        socketio.emit(
+            "log",
+            {
+                "data": f"Epoch [{epoch+1}/{epochs}] | "
+                f"Train Loss: {history.get('epoch_train_loss'):.4f} | Train Acc: {history.get('epoch_train_acc'):.4f} | "
+                f"Val Loss: {history.get('epoch_val_loss'):.4f} | Val Acc: {history.get('epoch_val_acc'):.4f} - Best: {history.get('best_val_accuracy'):.4f}"
+            },
         )
-        if history.get("epoch_val_acc") > history.get("best_val_accuracy"):
-            torch.save(model, f"best-models/cnn_{history.get('epoch_val_acc')}.pth")
+        if history.get("epoch_val_acc") >= history.get("best_val_accuracy"):
+            torch.save(model, f"best-models/cnn.pth")
         if early_stop(model, history, hyperparameters):
             print(f"Early stopping at epoch {epoch+1}")
             break
 
-    print("Training finished.")
+    socketio.emit(
+        "log",
+        {"data": "Finished Training!"},
+    )
 
 
 def train(model, loss_fn, optimizer, train_loader, history, device, hyperparameters):
@@ -148,8 +172,6 @@ def val(model, loss_fn, val_loader, history, device, hyperparameters):
             history["total_val"] += labels.size(0)
             history["correct_val"] += (predicted == labels).sum().item()
 
-    # Calculate epoch metrics based on the total accumulated values
-    # epoch_val_loss is the average loss per individual image across the epoch
     if history["total_val"] > 0:
         history["epoch_val_loss"] = history.get("running_val_loss") / history.get(
             "total_val"
@@ -210,9 +232,7 @@ def run_test():
         42: "End of no passing by vehicles over 3.5 metric tons",
     }
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = torch.load("best-models/cnn_0.9622747747747747.pth", weights_only=False).to(
-        device
-    )
+    model = torch.load("best-models/cnn.pth", weights_only=False).to(device)
     model.eval()
 
     img_path = "static/uploads/test-images/image_name.png"

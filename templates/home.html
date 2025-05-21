@@ -26,7 +26,7 @@
           <div class="form-group">
             <label for="train-file-upload">Upload (Folder):</label>
             <div class="file-upload">
-              <form action="{{ url_for('upload_folder') }}"
+              <form action="{{ url_for('home_bp.upload_folder') }}"
                     method="post"
                     enctype="multipart/form-data">
                 <input type="file"
@@ -46,7 +46,7 @@
                   {% endif %}
                 </span>
               </form>
-              <form action="{{ url_for('delete_upload') }}" method="post">
+              <form action="{{ url_for('home_bp.delete_upload') }}" method="post">
                 {% if messages %}<button type="submit" class="btn margin">Delete upload</button>{% endif %}
               </form>
             </div>
@@ -56,7 +56,9 @@
             {% for msg in messages %}{{ msg }}{% endfor %}
           </span>
         </div>
-        <form action="{{ url_for('start_training') }}" method="post">
+        <form id="train-form"
+              action="{{ url_for('home_bp.start_training') }}"
+              method="post">
           <div class="card">
             <h2 class="card-title">Model Selection</h2>
             <div class="form-group">
@@ -277,7 +279,7 @@
       <div id="test" class="tab-content test-tab">
         <div id="results-area" class="card" style="text-align: center; ">
           <form id="upload-form"
-                action="{{ url_for('test_upload_image') }}"
+                action="{{ url_for('home_bp.test_upload_image') }}"
                 method="post"
                 enctype="multipart/form-data"
                 style="text-align:center">
@@ -289,9 +291,9 @@
               <p>Results will appear here after running a test.</p>
             {% endif %}
             <div id="drop-area"
-                 style="width: 800px;
-                        height: 500px;
-                        margin: 20px auto;
+                 style="width: 700px;
+                        height: 400px;
+                        margin: 10px auto;
                         border: 2px dashed #ccc;
                         display: flex;
                         justify-content: center;
@@ -327,7 +329,7 @@
           </form>
         </div>
         <div class="card">
-          <form action="{{ url_for('run_test') }}" method='post'>
+          <form action="{{ url_for('home_bp.run_test') }}" method='post'>
             <h2 class="card-title">Select Model for Testing:</h2>
             <div class="form-group">
               <label for="test-model-select">Select Model:</label>
@@ -347,4 +349,94 @@
       </div>
     </div>
   </div>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    const consoleDiv = document.querySelector(".console");
+
+    // Listener for SocketIO messages
+    socket.on("log", (msg) => {
+      consoleDiv.innerHTML += "<br>" + msg.data;
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    });
+
+    // --- Handle Training Form Submission ---
+    const trainForm = document.getElementById('train-form');
+    if (trainForm) { // Check if the form exists
+        trainForm.addEventListener('submit', function(event) {
+          event.preventDefault(); // Prevent page refresh
+
+          consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+          const formData = new FormData(trainForm);
+
+          fetch(trainForm.action, {
+            method: trainForm.method,
+            body: formData
+          })
+          .then(response => {
+            // Check the status code
+            if (response.status === 204) { // Handle the 204 No Content status
+               consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            } else if (response.status >= 400 && response.status < 600) { // Handle client/server errors
+               response.text().then(text => {
+                 consoleDiv.innerHTML += "<br>Server error (" + response.status + "): " + text;
+                  consoleDiv.scrollTop = consoleDivscrollHeight;
+              });
+            } else {
+               // Handle other unexpected status codes
+               consoleDiv.innerHTML += "<br>Unexpected server response status: " + response.status;
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            }
+          })
+          .catch(error => {
+            // Handle network errors
+            consoleDiv.innerHTML += "<br>Network error: " + error;
+             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+          });
+        });
+    }
+
+
+    // --- Handle Test Form Submission ---
+    const testForm = document.getElementById('test-form');
+    if (testForm) { // Check if the form exists
+        testForm.addEventListener('submit', function(event) {
+             event.preventDefault(); // Prevent page refresh
+
+             consoleDiv.innerHTML += "<br><br>== Test Console ==";
+             consoleDiv.innerHTML += "<br>Sending test request...";
+             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+
+             const formData = new FormData(testForm);
+
+             fetch(testForm.action, {
+                 method: testForm.method,
+                 body: formData
+             })
+             .then(response => {
+                 // Similar logic as above to handle 204 or other statuses
+                 if (response.status === 204) {
+                    consoleDiv.innerHTML += "<br>Test request received. Awaiting output via SocketIO...";
+                    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                 } else if (response.status >= 400 && response.status < 600) {
+                      response.text().then(text => {
+                         consoleDiv.innerHTML += "<br>Server error (" + response.status + "): " + text;
+                          consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                      });
+                 } else {
+                    consoleDiv.innerHTML += "<br>Unexpected server response status: " + response.status;
+                     consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                 }
+             })
+             .catch(error => {
+                 consoleDiv.innerHTML += "<br>Network error during test: " + error;
+                  consoleDiv.scrollTop = consoleDiv.scrollHeight;
+             });
+        });
+    }
+
+
+  </script>
 {% endblock body %}

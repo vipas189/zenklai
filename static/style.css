@@ -322,11 +322,29 @@ select:focus {
   padding: 16px;
   border-radius: 6px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier,
-    monospace; /* Monospace font stack */
+    monospace;
   margin-top: 25px;
   font-size: 1.1rem;
   line-height: 1.5;
   border: 1px solid var(--border-light);
+  max-height: 300px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Add these styles for the console scrollbar to match your tab-content scrollbar */
+.console::-webkit-scrollbar {
+  height: 4px; /* Height for horizontal scrollbar */
+  width: 8px;
+}
+
+.console::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 10px;
+}
+
+.console::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Scrollbar styling (optional, for a more modern look) */
