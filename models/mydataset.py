@@ -21,5 +21,5 @@ class MyDataset(Dataset):
         img_path = os.path.join("static", "uploads", "images", filename)
         img = Image.open(img_path).convert("RGB")
         img = image_processing(img, roi_data, validation=self.validation)
-        label = torch.tensor(self.labels[idx])
+        label = self.labels[idx]
         return img, label

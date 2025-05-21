@@ -310,11 +310,10 @@ def start_training():
     def background_train_task(hp_dict):
         with _app_instance.app_context():
             current_model_type = hp_dict.get("model")
-
+            X_train, X_val, y_train, y_val, label_to_index, index_to_label = (
+                data_split()
+            )
             if current_model_type == "cnn-hyperparams":
-                X_train, X_val, y_train, y_val, label_to_index, index_to_label = (
-                    data_split()
-                )
 
                 cnn_model.start(
                     X_train,
@@ -327,7 +326,16 @@ def start_training():
                     _socketio,
                 )
             elif current_model_type == "svm-hyperparams":
-                svm_model.start(hp_dict, _socketio)
+                svm_model.start(
+                    X_train,
+                    X_val,
+                    y_train,
+                    y_val,
+                    label_to_index,
+                    index_to_label,
+                    hp_dict,
+                    _socketio,
+                )
             elif current_model_type == "vit-hyperparams":
                 vit_model.start(hp_dict, _socketio)
 
@@ -379,7 +387,7 @@ def run_test():
     if request.form.get("model") == "cnn":
         flash(cnn_model.run_test(), category="traffic-sign")
     elif request.form.get("model") == "svm":
-        svm_model.run_test()
+        flash(svm_model.run_test(), category="traffic-sign")
     elif request.form.get("model") == "vit":
-        vit_model.run_test()
+        flash(vit_model.run_test(), category="traffic-sign")
     return redirect(url_for("home_bp.home"))

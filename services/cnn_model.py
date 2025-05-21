@@ -1,14 +1,12 @@
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from services.image_processing import image_processing
 from services.early_stop import early_stop
 from models.simplecnn import SimpleCNN
 from models.mydataset import MyDataset
-import os
 from PIL import Image
-from torchvision import transforms
-from flask_socketio import emit
+from config import Config
+from services.image_processing import transforming
 
 
 def start(
@@ -30,14 +28,14 @@ def start(
         "best_val_scores": [],
         "epoch_train_loss": 0,
         "epoch_train_acc": 0,
-        "running_train_loss": 0,  # Accumulate total loss for all individual images in an epoch
+        "running_train_loss": 0,
         "correct_train": 0,
-        "total_train": 0,  # Count total individual images processed in an epoch
+        "total_train": 0,
         "epoch_val_loss": 0,
         "epoch_val_acc": 0,
-        "running_val_loss": 0,  # Accumulate total loss for all individual images in an epoch
+        "running_val_loss": 0,
         "correct_val": 0,
-        "total_val": 0,  # Count total individual images processed in an epoch
+        "total_val": 0,
         "best_val_accuracy": 0,
         "best_val_loss": float("inf"),
         "not_improved_val_acc": 0,
@@ -186,74 +184,18 @@ def val(model, loss_fn, val_loader, history, device, hyperparameters):
 
 
 def run_test():
-    class_map = {
-        0: "Speed limit (20km/h)",
-        1: "Speed limit (30km/h)",
-        2: "Speed limit (50km/h)",
-        3: "Speed limit (60km/h)",
-        4: "Speed limit (70km/h)",
-        5: "Speed limit (80km/h)",
-        6: "End of speed limit (80km/h)",
-        7: "Speed limit (100km/h)",
-        8: "Speed limit (120km/h)",
-        9: "No passing",
-        10: "No passing for vehicles over 3.5 metric tons",
-        11: "Right-of-way at the next intersection",
-        12: "Priority road",
-        13: "Yield",
-        14: "Stop",
-        15: "No vehicles",
-        16: "Vehicles over 3.5 metric tons prohibited",
-        17: "No entry",
-        18: "General caution",
-        19: "Dangerous curve to the left",
-        20: "Dangerous curve to the right",
-        21: "Double curve",
-        22: "Bumpy road",
-        23: "Slippery road",
-        24: "Road narrows on the right",
-        25: "Road work",
-        26: "Traffic signals",
-        27: "Pedestrians",
-        28: "Children crossing",
-        29: "Bicycles crossing",
-        30: "Beware of ice/snow",
-        31: "Wild animals crossing",
-        32: "End of all speed and passing limits",
-        33: "Turn right ahead",
-        34: "Turn left ahead",
-        35: "Ahead only",
-        36: "Go straight or right",
-        37: "Go straight or left",
-        38: "Keep right",
-        39: "Keep left",
-        40: "Roundabout mandatory",
-        41: "End of no passing",
-        42: "End of no passing by vehicles over 3.5 metric tons",
-    }
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = torch.load("best-models/cnn.pth", weights_only=False).to(device)
     model.eval()
 
     img_path = "static/uploads/test-images/image_name.png"
     img = Image.open(img_path).convert("RGB")
-
-    transform = transforms.Compose(
-        [
-            transforms.Resize((64, 64)),  # adjust to your model input size
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],  # standard for many pretrained models
-                std=[0.229, 0.224, 0.225],
-            ),
-        ]
-    )
-
-    input_tensor = transform(img).unsqueeze(0).to(device)  # add batch dimension
+    _, val_transform, _, _ = transforming()
+    input_tensor = val_transform(img).unsqueeze(0).to(device)
 
     with torch.no_grad():
         output = model(input_tensor)
         _, predicted = torch.max(output, 1)
-        label = class_map[predicted.item()]
+        label = Config.CLASS_MAP[predicted.item()]
 
     return label
